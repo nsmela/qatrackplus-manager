@@ -27,42 +27,16 @@ def backup(
     transport.make_dirs(backup_dir)
 
     # 1. DB Dump
-    if db_type == 'postgresql':
-        env = {'PGPASSWORD': db_config.get('password', '')}
-        dump_file = f"{tmp_dir}/db.dump"
-        # We need to write to file. Since transport.run doesn't support redirects easily,
-        # we can use a shell command or implement redirection.
-        cmd = [
-            "pg_dump", "-Fc",
-            "-h", db_config.get('host', 'localhost'),
-            "-p", db_config.get('port', '5432'),
-            "-U", db_config.get('user', 'qatrack'),
-            "-f", dump_file,
-            db_config.get('name', 'qatrackplus')
-        ]
-        res = transport.run(cmd, env=env)
-        if not res.succeeded:
-            raise DatabaseError(f"pg_dump failed: {res.stderr}")
-
-    elif db_type == 'mysql':
-        dump_file = f"{tmp_dir}/db.sql"
-        cmd = [
-            "mysqldump", "--single-transaction",
-            "-h", db_config.get('host', 'localhost'),
-            "-P", db_config.get('port', '3306'),
-            "-u", db_config.get('user', 'qatrack'),
-            f"-p{db_config.get('password', '')}",
-            f"--result-file={dump_file}",
-            db_config.get('name', 'qatrackplus')
-        ]
-        res = transport.run(cmd)
-        if not res.succeeded:
-            raise DatabaseError(f"mysqldump failed: {res.stderr}")
-
-    elif db_type == 'sqlite':
-        sqlite_file = os.path.join(app_dir, "qatrackplus.sqlite3")
-        if transport.file_exists(sqlite_file):
-            transport.run(["cp", sqlite_file, f"{tmp_dir}/db.sqlite3"])
+    from ..services.database import get_database_engine
+    engine = get_database_engine(transport, db_type, db_config)
+    
+    # Engine specific dump file name/path
+    dump_filename = "db.dump" if db_type == 'postgresql' else ("db.sql" if db_type == 'mysql' else "db.sqlite3")
+    dump_file = f"{tmp_dir}/{dump_filename}"
+    
+    res = engine.dump(dump_file)
+    if not res.succeeded:
+        raise DatabaseError(f"{db_type} dump failed: {res.stderr}")
     
     # 2. Write db_type file
     transport.write_file(f"{tmp_dir}/db_type", db_type)

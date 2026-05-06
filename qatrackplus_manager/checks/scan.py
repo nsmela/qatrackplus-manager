@@ -50,13 +50,23 @@ def scan_configured_database(transport: Transport, state: ManagerState) -> List[
     db_type = state.db_type
     
     # Service check
-    service_map = {'postgresql': 'postgresql', 'mysql': 'mysql', 'mssql': 'mssql-server'}
-    svc = service_map.get(db_type)
+    from ..services.database import get_database_engine
+    db_config = {
+        'host': state.db_host,
+        'port': state.db_port,
+        'name': state.db_name,
+        'user': state.db_user
+    }
+    engine = get_database_engine(transport, db_type, db_config)
+    svc = engine.get_service_name()
+    
     if svc:
         if transport.service_active(svc):
             results.append(ScanResult(f"{db_type.capitalize()} service", "ok", "Running"))
         else:
             results.append(ScanResult(f"{db_type.capitalize()} service", "fail", "Stopped"))
+    elif db_type == 'sqlite':
+        results.append(ScanResult("SQLite", "ok", "Serverless"))
 
     # Mismatch check
     for other_db, other_svc in service_map.items():

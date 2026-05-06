@@ -23,19 +23,16 @@ def restore(
     db_type = transport.read_file(f"{tmp_dir}/db_type").strip()
     
     # 3. Restore DB
-    if db_type == 'postgresql':
-        env = {'PGPASSWORD': db_config.get('password', '')}
-        # Drop and recreate DB (requires superuser or owner)
-        db_name = db_config.get('name', 'qatrackplus')
-        transport.run(["dropdb", "-h", db_config.get('host'), "-U", db_config.get('user'), db_name], env=env)
-        transport.run(["createdb", "-h", db_config.get('host'), "-U", db_config.get('user'), db_name], env=env)
-        
-        # Restore
-        transport.run([
-            "pg_restore", "-d", db_name,
-            "-h", db_config.get('host'), "-U", db_config.get('user'),
-            f"{tmp_dir}/db.dump"
-        ], env=env)
+    from ..services.database import get_database_engine
+    engine = get_database_engine(transport, db_type, db_config)
+    
+    # Engine specific dump file name/path
+    dump_filename = "db.dump" if db_type == 'postgresql' else ("db.sql" if db_type == 'mysql' else "db.sqlite3")
+    dump_file = f"{tmp_dir}/{dump_filename}"
+    
+    res = engine.restore(dump_file)
+    if not res.succeeded:
+        raise DatabaseError(f"{db_type} restore failed: {res.stderr}")
 
     # 4. Restore media
     media_tar = f"{tmp_dir}/media.tar.gz"
