@@ -21,6 +21,17 @@ def self_update():
     try:
         # Run pip install upgrade
         subprocess.check_call([pip_bin, "install", "--upgrade", f"git+{GITHUB_URL}"])
+        
+        # Save the new SHA
+        from ..checks.version import GITHUB_API_URL, SHA_FILE
+        import requests
+        res = requests.get(GITHUB_API_URL, timeout=5)
+        if res.status_code == 200:
+            new_sha = res.json().get("sha")
+            if new_sha:
+                with open(SHA_FILE, "w") as f:
+                    f.write(new_sha)
+
         console.print("[green]Update successful! Restarting...[/green]")
         
         # Restart the process

@@ -2,25 +2,31 @@ from __future__ import annotations
 import requests
 from .. import __version__
 
-GITHUB_API_URL = "https://api.github.com/repos/nsmela/qatrackplus-manager/releases/latest"
+import os
+GITHUB_API_URL = "https://api.github.com/repos/nsmela/qatrackplus-manager/commits/main"
+SHA_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "current_sha")
 
 def check_for_updates() -> tuple[bool, str]:
     """
-    Check if a newer version of the manager is available on GitHub.
-    Returns (update_available, latest_version).
+    Check if a newer commit is available on GitHub main branch.
+    Returns (update_available, latest_sha).
     """
     try:
         response = requests.get(GITHUB_API_URL, timeout=5)
         response.raise_for_status()
         data = response.json()
         
-        latest_version = data.get("tag_name", "").lstrip("v")
-        if not latest_version:
+        latest_sha = data.get("sha", "")
+        if not latest_sha:
             return False, ""
             
-        from packaging.version import parse
-        if parse(latest_version) > parse(__version__):
-            return True, latest_version
+        current_sha = ""
+        if os.path.exists(SHA_FILE):
+            with open(SHA_FILE, "r") as f:
+                current_sha = f.read().strip()
+        
+        if latest_sha != current_sha:
+            return True, latest_sha[:7]
             
     except Exception as e:
         raise RuntimeError(f"Could not verify version on GitHub: {str(e)}")
