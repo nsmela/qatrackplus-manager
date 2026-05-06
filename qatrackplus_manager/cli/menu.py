@@ -22,8 +22,33 @@ def show_header(state: ManagerState):
 def main_menu(state: ManagerState):
     transport = LocalTransport()
     
+    # Check for updates on startup
+    from ..checks.version import check_for_updates
+    from ..operations.manager import self_update
+    
+    try:
+        update_available, latest_v = check_for_updates()
+        if update_available:
+            console.print(Panel(
+                f"[yellow]A new version of the manager is available: [bold]{latest_v}[/bold][/yellow]\n"
+                "Auto-updating now...",
+                title="Update Found",
+                border_style="yellow"
+            ))
+            time.sleep(2)
+            self_update()
+    except Exception as e:
+        console.print(Panel(
+            f"[red]Could not verify for updates: {str(e)}[/red]",
+            title="Version Check Error",
+            border_style="red"
+        ))
+        time.sleep(3)
+    
     while True:
         show_header(state)
+
+            
         console.print("\n[bold]Main Menu[/bold]")
         console.print("1. System Scan")
         console.print("2. Test Install")

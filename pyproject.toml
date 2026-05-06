@@ -12,6 +12,7 @@ dependencies = [
     "tomli>=2.0; python_version < '3.11'",
     "paramiko>=3.0",
     "psutil>=5.9",
+    "requests>=2.31",
     "typing-extensions>=4.0; python_version < '3.10'",
 ]
 
