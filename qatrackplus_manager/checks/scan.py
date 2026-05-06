@@ -45,33 +45,44 @@ def scan_system_services(transport: Transport, state: ManagerState) -> List[Scan
         
     return results
 
-def scan_configured_database(transport: Transport, state: ManagerState) -> List[ScanResult]:
-    results = []
-    db_type = state.db_type
-    
-    # Service check
+    # 1. Check all supported SQL engines
     from ..services.database import get_database_engine
-    db_config = {
-        'host': state.db_host,
-        'port': state.db_port,
-        'name': state.db_name,
-        'user': state.db_user
-    }
-    engine = get_database_engine(transport, db_type, db_config)
-    svc = engine.get_service_name()
+    supported_types = ['postgresql', 'mysql', 'mssql']
     
-    if svc:
-        if transport.service_active(svc):
-            results.append(ScanResult(f"{db_type.capitalize()} service", "ok", "Running"))
-        else:
-            results.append(ScanResult(f"{db_type.capitalize()} service", "fail", "Stopped"))
-    elif db_type == 'sqlite':
-        results.append(ScanResult("SQLite", "ok", "Serverless"))
+    for t in supported_types:
+        engine = get_database_engine(transport, t, {})
+        svc = engine.get_service_name()
+        is_active = transport.service_active(svc)
+        
+        status = "ok" if is_active else "info"
+        # If this is the configured DB but it's down, mark as fail
+        if t == db_type and not is_active:
+            status = "fail"
+            
+        label = f"{t.capitalize()} Service"
+        if t == db_type:
+            label += " [bold magenta](Configured)[/bold magenta]"
+            
+        detail = "Running" if is_active else "Stopped"
+        results.append(ScanResult(label, status, detail))
 
-    # Mismatch check
-    for other_db, other_svc in service_map.items():
-        if other_db != db_type and transport.service_active(other_svc):
-            results.append(ScanResult("DB Mismatch Warning", "warn", f"{other_db} is running but {db_type} is configured"))
+    # 2. SQLite check (if configured)
+    if db_type == 'sqlite':
+        results.append(ScanResult("SQLite [bold magenta](Configured)[/bold magenta]", "ok", "Serverless"))
+
+    # 3. Mismatch check: warn if more than one engine is running
+    running = []
+    for t in supported_types:
+        engine = get_database_engine(transport, t, {})
+        if transport.service_active(engine.get_service_name()):
+            running.append(t)
+            
+    if len(running) > 1:
+        results.append(ScanResult(
+            "Multiple DB Engines", 
+            "warn", 
+            f"Caution: {', '.join(running)} are all running."
+        ))
 
     return results
 
