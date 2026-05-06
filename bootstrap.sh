@@ -2,7 +2,7 @@
 set -euo pipefail
 
 MANAGER_VENV="/opt/qatrackplus-manager-venv"
-GITHUB_URL="https://github.com/YOUR_ORG/qatrackplus-manager"
+GITHUB_URL="https://github.com/nsmela/qatrackplus-manager"
 
 # 1. Check root
 [[ "${EUID}" -eq 0 ]] || { echo "Run as root."; exit 1; }
