@@ -25,10 +25,10 @@ def check_for_updates() -> tuple[bool, str]:
             with open(SHA_FILE, "r") as f:
                 current_sha = f.read().strip()
         
-        if latest_sha != current_sha:
-            return True, latest_sha[:7]
+        return latest_sha != current_sha, latest_sha[:7]
             
     except Exception as e:
         raise RuntimeError(f"Could not verify version on GitHub: {str(e)}")
         
     return False, ""
+

@@ -10,7 +10,7 @@ from ..transport.local import LocalTransport
 from ..checks.scan import run_full_scan
 from ..ui.tables import render_scan_section
 
-def show_header(state: ManagerState):
+def show_header(state: ManagerState, latest_version: str = ""):
     console.clear()
     header_text = (
         f"Active Server: [cyan]{state.active_server}[/cyan] | "
@@ -18,6 +18,9 @@ def show_header(state: ManagerState):
         f"Web: [cyan]{state.web_server}[/cyan]"
     )
     console.print(Panel(header_text, title="QA Track Plus Manager", style="bold blue"))
+    if latest_version:
+        console.print(f"Latest Version: [bold cyan]{latest_version}[/bold cyan]")
+
 
 def main_menu(state: ManagerState):
     transport = LocalTransport()
@@ -26,6 +29,7 @@ def main_menu(state: ManagerState):
     from ..checks.version import check_for_updates
     from ..operations.manager import self_update
     
+    latest_v = ""
     try:
         update_available, latest_v = check_for_updates()
         if update_available:
@@ -46,7 +50,8 @@ def main_menu(state: ManagerState):
         time.sleep(3)
     
     while True:
-        show_header(state)
+        show_header(state, latest_v)
+
 
             
         console.print("\n[bold]Main Menu[/bold]")

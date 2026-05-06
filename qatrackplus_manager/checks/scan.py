@@ -45,6 +45,10 @@ def scan_system_services(transport: Transport, state: ManagerState) -> List[Scan
         
     return results
 
+def scan_configured_database(transport: Transport, state: ManagerState) -> List[ScanResult]:
+    results = []
+    db_type = state.db_type
+    
     # 1. Check all supported SQL engines
     from ..services.database import get_database_engine
     supported_types = ['postgresql', 'mysql', 'mssql']
@@ -85,6 +89,7 @@ def scan_system_services(transport: Transport, state: ManagerState) -> List[Scan
         ))
 
     return results
+
 
 def run_full_scan(transport: Transport, state: ManagerState) -> List[List[ScanResult]]:
     return [
