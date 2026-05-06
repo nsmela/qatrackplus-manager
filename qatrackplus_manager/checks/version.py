@@ -18,8 +18,8 @@ def check_for_updates() -> tuple[bool, str]:
         if not latest_version:
             return False, ""
             
-        # Very simple version comparison (assumes semver)
-        if latest_version != __version__:
+        from packaging.version import parse
+        if parse(latest_version) > parse(__version__):
             return True, latest_version
             
     except Exception as e:
