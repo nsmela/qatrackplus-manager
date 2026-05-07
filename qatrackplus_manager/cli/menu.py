@@ -37,49 +37,63 @@ def get_latest_qatrack_release() -> str:
 
 def handle_install(transport: LocalTransport, state: ManagerState):
     from ..operations.install import install
-    from rich.prompt import Confirm, Prompt
+    from rich.prompt import Confirm, IntPrompt
     import secrets
 
     console.print("\n[bold blue]─── QATrack+ Installation ───[/bold blue]")
     
+    def ask_with_default(msg, default, password=False):
+        prompt_str = f"{msg} [dim](leave blank for default: {default})[/dim]: "
+        val = console.input(prompt_str, password=password)
+        return val.strip() or default
+
     # 1. Basic paths
-    app_dir = Prompt.ask("Application directory", default="/opt/qatrackplus")
-    app_user = Prompt.ask("Application user", default="qatrack")
+    app_dir = ask_with_default("Application directory", "/opt/qatrackplus")
+    app_user = ask_with_default("Application user", "qatrack")
     
     # 2. Release
     with console.status("[dim]Fetching latest release from GitHub..."):
         latest_release = get_latest_qatrack_release()
     
-    release_url = Prompt.ask("Release URL (tar.gz)", default=latest_release)
+    release_url = ask_with_default("Release URL (tar.gz)", latest_release)
     
-    # 3. Database Type
+    # 3. Database Type (Numbered Choice)
     db_types = ["postgresql", "mysql", "sqlite", "mssql"]
-    db_type = Prompt.ask("Database type", choices=db_types, default=state.db_type)
+    console.print("\n[bold]Select Database Type:[/bold]")
+    for i, t in enumerate(db_types, 1):
+        console.print(f"{i}. {t}")
+    
+    # Map current state to default index
+    default_idx = 1
+    if state.db_type in db_types:
+        default_idx = db_types.index(state.db_type) + 1
+        
+    choice_idx = IntPrompt.ask("Select an option", choices=[str(i) for i in range(1, len(db_types)+1)], default=default_idx)
+    db_type = db_types[choice_idx - 1]
     state.db_type = db_type
     
     # 4. Database Config
     console.print(f"\n[bold]Database Configuration ([cyan]{state.db_type}[/cyan])[/bold]")
-    db_host = Prompt.ask("Database host", default=state.db_host)
+    db_host = ask_with_default("Database host IP/Hostname", "localhost")
     state.db_host = db_host
     
-    db_user = Prompt.ask("Database user", default=state.db_user)
+    db_user = ask_with_default("Database user", state.db_user)
     state.db_user = db_user
     
-    db_pass = Prompt.ask(f"Password for user [cyan]{db_user}[/cyan]", password=True)
+    db_pass = console.input(f"Password for user [cyan]{db_user}[/cyan]: ", password=True)
     
     # 5. Django Settings
     console.print(f"\n[bold]Django Settings[/bold]")
-    secret_key = Prompt.ask("SECRET_KEY (leave blank to generate)", password=True, default="")
+    secret_key = console.input("SECRET_KEY [dim](leave blank to generate)[/dim]: ", password=True)
     if not secret_key:
         secret_key = secrets.token_urlsafe(50)
         console.print("[dim]Generated a random secret key.[/dim]")
     
-    allowed_hosts = Prompt.ask("ALLOWED_HOSTS (comma separated)", default="localhost")
+    allowed_hosts = ask_with_default("ALLOWED_HOSTS (comma separated)", "localhost")
 
     # Confirm
     if not Confirm.ask("\nReady to begin installation?"):
         return
-
 
     install_config = {
         'app_dir': app_dir,
@@ -91,14 +105,18 @@ def handle_install(transport: LocalTransport, state: ManagerState):
     }
 
     try:
-        with console.status("[bold green]Installing QATrack+... (this may take several minutes)"):
-            install(transport, state, install_config)
+        def status_update(msg):
+            console.print(f"  [bold blue]•[/bold blue] {msg}")
+
+        console.print("\n[bold yellow]Starting Installation...[/bold yellow]")
+        install(transport, state, install_config, status_callback=status_update)
         console.print("\n[bold green]SUCCESS:[/bold green] QATrack+ has been installed and services started.")
     except Exception as e:
         console.print(f"\n[bold red]Installation Failed:[/bold red] {str(e)}")
         logging.exception("Installation failed")
     
     console.input("\nPress Enter to return to menu...")
+
 
 
 

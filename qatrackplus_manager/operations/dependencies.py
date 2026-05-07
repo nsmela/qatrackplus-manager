@@ -107,8 +107,13 @@ def resolve_missing_dependencies(
             raise DependencyError(f"Django setup failed with non-import error: {res.stderr}")
             
         module_name = match.group(1)
+        if module_name.startswith("qatrack."):
+             # This is an internal module, not a pip package
+             raise DependencyError(f"Internal module error: '{module_name}'. This usually means your local_settings.py has a syntax error or a required local file is missing.")
+             
         # Convert X to pip package name: replace _ with -
         package_name = module_name.replace("_", "-")
+
         
         # Run pip install
         pip_cmd = [os.path.dirname(venv_python) + "/pip", "install", package_name]
