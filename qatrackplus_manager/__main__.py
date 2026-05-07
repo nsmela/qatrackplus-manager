@@ -29,7 +29,12 @@ def main():
     # Default app_dir for state loading
     state = load_state(transport, "/opt/qatrackplus")
     
+    # Always refresh state from the system on startup
+    from .config.detect import auto_detect
+    auto_detect(transport, state)
+    
     main_menu(state)
+
 
 if __name__ == "__main__":
     main()
