@@ -23,36 +23,63 @@ def show_header(state: ManagerState, latest_version: str = ""):
     if latest_version:
         console.print(f"Latest Version: [bold cyan]{latest_version}[/bold cyan]")
 
+def get_latest_qatrack_release() -> str:
+    """Fetch the latest release tarball URL from GitHub API."""
+    fallback = "https://github.com/qatrackplus/qatrackplus/archive/refs/tags/v3.1.1.tar.gz"
+    try:
+        import requests
+        res = requests.get("https://api.github.com/repos/qatrackplus/qatrackplus/releases/latest", timeout=5)
+        if res.status_code == 200:
+            return res.json().get("tarball_url", fallback)
+    except:
+        pass
+    return fallback
+
 def handle_install(transport: LocalTransport, state: ManagerState):
     from ..operations.install import install
+    from rich.prompt import Confirm, Prompt
     import secrets
 
     console.print("\n[bold blue]─── QATrack+ Installation ───[/bold blue]")
     
     # 1. Basic paths
-    app_dir = console.input(f"Application directory [[cyan]/opt/qatrackplus[/cyan]]: ") or "/opt/qatrackplus"
-    app_user = console.input(f"Application user [[cyan]qatrack[/cyan]]: ") or "qatrack"
+    app_dir = Prompt.ask("Application directory", default="/opt/qatrackplus")
+    app_user = Prompt.ask("Application user", default="qatrack")
     
     # 2. Release
-    default_release = "https://github.com/randlet/qatrackplus/archive/refs/tags/v3.1.1.tar.gz"
-    release_url = console.input(f"Release URL (tar.gz) [[cyan]{default_release}[/cyan]]: ") or default_release
+    with console.status("[dim]Fetching latest release from GitHub..."):
+        latest_release = get_latest_qatrack_release()
     
-    # 3. Database
+    release_url = Prompt.ask("Release URL (tar.gz)", default=latest_release)
+    
+    # 3. Database Type
+    db_types = ["postgresql", "mysql", "sqlite", "mssql"]
+    db_type = Prompt.ask("Database type", choices=db_types, default=state.db_type)
+    state.db_type = db_type
+    
+    # 4. Database Config
     console.print(f"\n[bold]Database Configuration ([cyan]{state.db_type}[/cyan])[/bold]")
-    db_pass = console.input(f"Password for user [cyan]{state.db_user}[/cyan]: ", password=True)
+    db_host = Prompt.ask("Database host", default=state.db_host)
+    state.db_host = db_host
     
-    # 4. Django Settings
+    db_user = Prompt.ask("Database user", default=state.db_user)
+    state.db_user = db_user
+    
+    db_pass = Prompt.ask(f"Password for user [cyan]{db_user}[/cyan]", password=True)
+    
+    # 5. Django Settings
     console.print(f"\n[bold]Django Settings[/bold]")
-    secret_key = console.input(f"SECRET_KEY (leave blank to generate): ", password=True)
+    secret_key = Prompt.ask("SECRET_KEY (leave blank to generate)", password=True, default="")
     if not secret_key:
         secret_key = secrets.token_urlsafe(50)
         console.print("[dim]Generated a random secret key.[/dim]")
     
-    allowed_hosts = console.input(f"ALLOWED_HOSTS (comma separated) [[cyan]localhost[/cyan]]: ") or "localhost"
+    allowed_hosts = Prompt.ask("ALLOWED_HOSTS (comma separated)", default="localhost")
 
     # Confirm
-    if not console.confirm("\nReady to begin installation?"):
+    if not Confirm.ask("\nReady to begin installation?"):
         return
+
 
     install_config = {
         'app_dir': app_dir,
