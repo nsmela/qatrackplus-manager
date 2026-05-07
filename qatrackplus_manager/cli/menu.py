@@ -14,11 +14,9 @@ from ..ui.tables import render_scan_section, render_test_section
 
 def show_header(state: ManagerState, latest_version: str = ""):
     from .. import __version__
-    import os
-    module_path = os.path.abspath(__file__)
     console.clear()
     header_text = (
-        f"v{__version__} | {module_path}\n"
+        f"v{__version__} | "
         f"Active Server: [cyan]{state.active_server}[/cyan] | "
         f"DB: [cyan]{state.db_type}[/cyan] | "
         f"Web: [cyan]{state.web_server}[/cyan]"
@@ -26,6 +24,7 @@ def show_header(state: ManagerState, latest_version: str = ""):
     console.print(Panel(header_text, title="QA Track Plus Manager", style="bold blue"))
     if latest_version:
         console.print(f"Latest Version: [bold cyan]{latest_version}[/bold cyan]")
+
 
 
 

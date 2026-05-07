@@ -1,6 +1,6 @@
 from __future__ import annotations
 from rich.prompt import Prompt, Confirm
-from .ui.console import console
+from ..ui.console import console
 
 def ask_string(message: str, default: str = "") -> str:
     return Prompt.ask(message, default=default)
