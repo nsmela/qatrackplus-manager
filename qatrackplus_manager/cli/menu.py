@@ -3,6 +3,7 @@ import sys
 import time
 import logging
 from rich.panel import Panel
+from rich.prompt import Confirm, Prompt
 from ..ui.console import console
 from ..ui.theme import STATUS_ICONS
 from ..config.models import ManagerState
@@ -28,20 +29,8 @@ def show_header(state: ManagerState, latest_version: str = ""):
 
 
 
-def get_latest_qatrack_release() -> str:
-    """Fetch the latest release tarball URL from GitHub API."""
-    fallback = "https://github.com/qatrackplus/qatrackplus/archive/refs/tags/v3.1.1.tar.gz"
-    try:
-        import requests
-        res = requests.get("https://api.github.com/repos/qatrackplus/qatrackplus/releases/latest", timeout=5)
-        if res.status_code == 200:
-            return res.json().get("tarball_url", fallback)
-    except:
-        pass
-    return fallback
-
 def handle_install(transport: LocalTransport, state: ManagerState):
-    from ..operations.install import install
+    from ..operations.install import install, get_latest_qatrack_release
     from rich.prompt import Confirm, IntPrompt
     from .prompts import ask_with_default
     import secrets

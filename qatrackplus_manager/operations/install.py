@@ -12,6 +12,18 @@ from .dependencies import find_requirements_file, resolve_missing_dependencies
 from ..services.gunicorn import GunicornManager
 from ..services.web_server import WebServerManager
 
+def get_latest_qatrack_release() -> str:
+    """Fetch the latest release tarball URL from GitHub API."""
+    fallback = "https://github.com/qatrackplus/qatrackplus/archive/refs/tags/v3.1.1.tar.gz"
+    try:
+        import requests
+        res = requests.get("https://api.github.com/repos/qatrackplus/qatrackplus/releases/latest", timeout=5)
+        if res.status_code == 200:
+            return res.json().get("tarball_url", fallback)
+    except:
+        pass
+    return fallback
+
 def install(
     transport: Transport,
     state: ManagerState,
