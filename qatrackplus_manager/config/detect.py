@@ -14,27 +14,32 @@ def detect_qatrack_version(transport: Transport, app_dir: str) -> Tuple[int, str
     # 1. If qatrack/settings.py exists AND contains "from .local_settings import"
     if transport.file_exists(settings_py):
         content = transport.read_file(settings_py)
-        if "from .local_settings import" in content or "from qatrack.local_settings import" in content:
+        if "local_settings" in content:
             return 4, f"{app_dir}/qatrack/local_settings.py", "qatrack.settings"
 
     # 2. If qatrack/settings/ is a directory
     if transport.dir_exists(settings_dir):
-        return 3, f"{app_dir}/qatrack/settings/local_settings.py", "qatrack.settings.local_settings"
+        # Check if it's the newer v4 layout inside settings/
+        if transport.file_exists(f"{settings_dir}/local_settings.py"):
+             return 3, f"{settings_dir}/local_settings.py", "qatrack.settings.local_settings"
+        return 3, f"{settings_dir}/local_settings.py", "qatrack.settings.local_settings"
 
-    # 3. If qatrack/local_settings.py exists
+    # 3. Check for qatrack/local_settings.py
     if transport.file_exists(f"{app_dir}/qatrack/local_settings.py"):
         return 4, f"{app_dir}/qatrack/local_settings.py", "qatrack.settings"
 
-    # 4. If qatrack/settings/local_settings.py exists
+    # 4. Check for qatrack/settings/local_settings.py
     if transport.file_exists(f"{app_dir}/qatrack/settings/local_settings.py"):
         return 3, f"{app_dir}/qatrack/settings/local_settings.py", "qatrack.settings.local_settings"
 
-    # 5. If qatrack/settings.py exists (but didn't match above)
-    if transport.file_exists(settings_py):
+    # 5. Fallback for v4
+    if transport.file_exists(f"{app_dir}/manage.py"):
+        # If manage.py exists but we can't find settings, guess based on major 4 structure
         return 4, f"{app_dir}/qatrack/local_settings.py", "qatrack.settings"
 
     # 6. Default
     return 3, f"{app_dir}/qatrack/settings/local_settings.py", "qatrack.settings.local_settings"
+
 
 def detect_db_from_settings(transport: Transport, local_settings_path: str) -> Optional[Dict[str, str]]:
     if not transport.file_exists(local_settings_path):

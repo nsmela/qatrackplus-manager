@@ -52,9 +52,17 @@ def test_django_checks(transport: Transport, state: ManagerState) -> List[TestRe
 
     return results
 
+def test_diagnostics(transport: Transport, state: ManagerState) -> List[TestResult]:
+    results = []
+    results.append(TestResult("Detected Major Version", "info", str(state.qatrack_version_major)))
+    results.append(TestResult("Settings Module", "info", state.django_settings or "None"))
+    results.append(TestResult("Local Settings Path", "info", state.local_settings_file or "None"))
+    return results
+
 def run_all_tests(transport: Transport, state: ManagerState) -> List[List[TestResult]]:
     return [
+        test_diagnostics(transport, state),
         test_app_files(transport, state),
         test_django_checks(transport, state),
-        # ... other groups T3-T7
     ]
+

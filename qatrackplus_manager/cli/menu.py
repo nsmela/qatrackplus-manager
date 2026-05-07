@@ -101,8 +101,9 @@ def handle_install(transport: LocalTransport, state: ManagerState):
         'release_url': release_url,
         'db_password': db_pass,
         'secret_key': secret_key,
-        'allowed_hosts': allowed_hosts,
+        'allowed_hosts': [h.strip() for h in allowed_hosts.split(",") if h.strip()],
     }
+
 
     try:
         def status_update(msg):

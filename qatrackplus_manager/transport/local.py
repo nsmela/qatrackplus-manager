@@ -16,16 +16,21 @@ class LocalTransport(Transport):
         env: Optional[dict] = None,
         cwd: Optional[str] = None,
     ) -> CommandResult:
-        try:
+            # Merge with current environment so we don't lose PATH, etc.
+            full_env = os.environ.copy()
+            if env:
+                full_env.update(env)
+
             result = subprocess.run(
                 cmd,
                 input=input,
                 text=True,
                 capture_output=True,
-                env=env,
+                env=full_env,
                 cwd=cwd,
                 check=False
             )
+
             return CommandResult(
                 exit_code=result.returncode,
                 stdout=result.stdout,

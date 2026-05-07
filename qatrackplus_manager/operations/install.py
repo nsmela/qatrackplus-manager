@@ -104,11 +104,16 @@ def install(
     
     # 10. Write local_settings.py (MUST BE BEFORE DEPENDENCY RESOLUTION)
     update_status("Configuring QATrack+ (local_settings.py)...")
+    
+    db_name = state.db_name
+    if db_type == 'sqlite':
+        db_name = os.path.join(app_dir, "db.sqlite3")
+
     ls_content = generate_local_settings(
         version_major=major,
         db_type=db_type,
         db_config={
-            'name': state.db_name,
+            'name': db_name,
             'user': state.db_user,
             'password': install_config['db_password'],
             'host': state.db_host,
@@ -120,6 +125,7 @@ def install(
         media_root=os.path.join(app_dir, "media")
     )
     transport.write_file(ls_file, ls_content)
+
 
     # 11. Resolve dependencies loop
     update_status("Resolving missing dependencies...")
