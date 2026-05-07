@@ -357,18 +357,11 @@ def main_menu(state: ManagerState):
                 handle_restore(transport, state)
             elif choice == "7":
                 handle_settings(transport, state)
-
-
-
-
-
             elif choice == "0":
-
                 console.print("[yellow]Goodbye![/yellow]")
                 sys.exit(0)
             else:
-
-                console.print("[red]Not implemented yet.[/red]")
+                console.print("[red]Invalid option.[/red]")
                 time.sleep(1)
         except Exception as e:
             console.print(f"\n[red bold]Error:[/red bold] {str(e)}")
