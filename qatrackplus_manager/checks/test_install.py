@@ -59,10 +59,32 @@ def test_diagnostics(transport: Transport, state: ManagerState) -> List[TestResu
     results.append(TestResult("Local Settings Path", "info", state.local_settings_file or "None"))
     return results
 
+def test_web_accessibility(transport: Transport, state: ManagerState) -> List[TestResult]:
+
+    results = []
+    
+    # Try localhost
+    # -L to follow redirects (e.g. to /accounts/login/)
+    # -I for just the header
+    res = transport.run(["curl", "-s", "-L", "-I", "http://localhost"])
+    
+    if res.succeeded:
+        status_line = res.output.splitlines()[0] if res.output else "No output"
+        if "200" in status_line or "301" in status_line or "302" in status_line:
+            results.append(TestResult("Web Access (Localhost)", "pass", status_line))
+        else:
+            results.append(TestResult("Web Access (Localhost)", "fail", f"Unexpected response: {status_line}"))
+    else:
+        results.append(TestResult("Web Access (Localhost)", "fail", "Connection failed or timeout. Check Nginx/Gunicorn."))
+        
+    return results
+
 def run_all_tests(transport: Transport, state: ManagerState) -> List[List[TestResult]]:
     return [
         test_diagnostics(transport, state),
         test_app_files(transport, state),
         test_django_checks(transport, state),
+        test_web_accessibility(transport, state),
     ]
+
 
