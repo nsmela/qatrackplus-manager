@@ -41,6 +41,34 @@ def detect_qatrack_version(transport: Transport, app_dir: str) -> Tuple[int, str
     return 3, f"{app_dir}/qatrack/settings/local_settings.py", "qatrack.settings.local_settings"
 
 
+def detect_full_settings_from_file(transport: Transport, local_settings_path: str) -> Dict[str, Any]:
+    if not transport.file_exists(local_settings_path):
+        return {}
+    
+    content = transport.read_file(local_settings_path)
+    config = {}
+    
+    # 1. DB Info
+    db_info = detect_db_from_settings(transport, local_settings_path)
+    if db_info:
+        config.update(db_info)
+    
+    # 2. Secret Key
+    match = re.search(r"SECRET_KEY\s*=\s*['\"]([^'\"]+)['\"]", content)
+    if match:
+        config['secret_key'] = match.group(1)
+    
+    # 3. Allowed Hosts
+    match = re.search(r"ALLOWED_HOSTS\s*=\s*(\[[^\]]+\])", content)
+    if match:
+        try:
+            import ast
+            config['allowed_hosts'] = ast.literal_eval(match.group(1))
+        except:
+            config['allowed_hosts'] = ["localhost"]
+            
+    return config
+
 def detect_db_from_settings(transport: Transport, local_settings_path: str) -> Optional[Dict[str, str]]:
     if not transport.file_exists(local_settings_path):
         return None

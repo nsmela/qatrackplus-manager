@@ -119,6 +119,177 @@ def handle_install(transport: LocalTransport, state: ManagerState):
     console.input("\nPress Enter to return to menu...")
 
 
+def handle_upgrade(transport: LocalTransport, state: ManagerState):
+    from ..operations.upgrade import upgrade
+    from .prompts import ask_with_default
+    from ..operations.install import get_latest_qatrack_release
+    
+    if not state.servers[0].app_dir:
+        console.print("[red]No installation detected. Please install first.[/red]")
+        time.sleep(2)
+        return
+
+    console.print("\n[bold blue]─── QATrack+ Upgrade ───[/bold blue]")
+    
+    # 1. New Release
+    with console.status("[dim]Fetching latest release from GitHub..."):
+        latest_release = get_latest_qatrack_release()
+    
+    release_url = ask_with_default("New Release URL (tar.gz)", latest_release)
+    
+    # 2. Backup Location
+    backup_dir = ask_with_default("Backup directory", "/opt/qatrackplus-backups")
+    
+    # Confirm
+    if not Confirm.ask("\nReady to begin upgrade? [dim](A backup will be created first)[/dim]"):
+        return
+
+    upgrade_config = {
+        'app_dir': state.servers[0].app_dir,
+        'app_user': state.servers[0].app_user,
+        'release_url': release_url,
+        'backup_dir': backup_dir,
+        'db_password': "", # Will be detected from local_settings.py
+        'secret_key': "",   # Will be detected
+        'allowed_hosts': [], # Will be detected
+    }
+    
+    def status_update(msg):
+        console.print(f"  [bold blue]•[/bold blue] {msg}")
+
+    try:
+        console.print("\n[bold yellow]Starting Upgrade Process...[/bold yellow]")
+        upgrade(transport, state, upgrade_config, status_callback=status_update)
+        console.print("\n[bold green]SUCCESS:[/bold green] QATrack+ has been upgraded and services restarted.")
+    except Exception as e:
+        console.print(f"\n[bold red]Upgrade Failed:[/bold red] {str(e)}")
+        logging.exception("Upgrade failed")
+    
+    console.input("\nPress Enter to return to menu...")
+
+
+def handle_backup(transport: LocalTransport, state: ManagerState):
+    from ..operations.backup import backup
+    from .prompts import ask_with_default
+    
+    if not state.servers[0].app_dir:
+        console.print("[red]No installation detected.[/red]")
+        time.sleep(2)
+        return
+
+    console.print("\n[bold blue]─── QATrack+ Backup ───[/bold blue]")
+    backup_dir = ask_with_default("Backup directory", "/opt/qatrackplus-backups")
+    label = Prompt.ask("Backup label [dim](optional)[/dim]", default="manual")
+
+    try:
+        with console.status("[bold yellow]Creating backup..."):
+            from ..config.detect import detect_full_settings_from_file
+            settings = detect_full_settings_from_file(transport, state.local_settings_file)
+            
+            db_config = {
+                'name': state.db_name,
+                'user': state.db_user,
+                'host': state.db_host,
+                'port': state.db_port,
+                'password': settings.get('db_password', '')
+            }
+            
+            archive_path = backup(
+                transport,
+                state.servers[0].app_dir,
+                backup_dir,
+                state.db_type,
+                db_config,
+                label=label
+            )
+        console.print(f"\n[bold green]SUCCESS:[/bold green] Backup created at [cyan]{archive_path}[/cyan]")
+    except Exception as e:
+        console.print(f"\n[bold red]Backup Failed:[/bold red] {str(e)}")
+        logging.exception("Backup failed")
+    
+    console.input("\nPress Enter to return to menu...")
+
+
+
+
+
+
+def handle_restore(transport: LocalTransport, state: ManagerState):
+    from ..operations.restore import restore
+    from .prompts import ask_with_default
+    
+    if not state.servers[0].app_dir:
+        console.print("[red]No installation detected.[/red]")
+        time.sleep(2)
+        return
+
+    console.print("\n[bold blue]─── QATrack+ Restore ───[/bold blue]")
+    archive_path = Prompt.ask("Path to backup archive (.tar.gz)")
+    
+    if not transport.file_exists(archive_path):
+        console.print(f"[red]Error: Archive not found at {archive_path}[/red]")
+        time.sleep(2)
+        return
+
+    # Confirm
+    if not Confirm.ask(f"\n[yellow]WARNING: This will overwrite your current database and media files.[/yellow]\nReady to restore from [cyan]{archive_path}[/cyan]?"):
+        return
+
+    try:
+        with console.status("[bold yellow]Restoring from backup..."):
+             from ..config.detect import detect_full_settings_from_file
+             
+             db_config = {
+                'name': state.db_name,
+                'user': state.db_user,
+                'host': state.db_host,
+                'port': state.db_port,
+                'password': ""
+             }
+             
+             if state.local_settings_file and transport.file_exists(state.local_settings_file):
+                 settings = detect_full_settings_from_file(transport, state.local_settings_file)
+                 db_config['password'] = settings.get('db_password', '')
+             
+             if not db_config['password'] and state.db_type != 'sqlite':
+                 db_config['password'] = console.input(f"Password for database user [cyan]{state.db_user}[/cyan]: ", password=True)
+
+             restore(
+                transport,
+                archive_path,
+                state.servers[0].app_dir,
+                db_config
+             )
+        console.print(f"\n[bold green]SUCCESS:[/bold green] Restoration complete!")
+    except Exception as e:
+        console.print(f"\n[bold red]Restore Failed:[/bold red] {str(e)}")
+        logging.exception("Restore failed")
+    
+    console.input("\nPress Enter to return to menu...")
+
+
+def handle_settings(transport: LocalTransport, state: ManagerState):
+    from .prompts import ask_with_default
+    
+    console.print("\n[bold blue]─── QATrack+ Manager Settings ───[/bold blue]")
+    console.print(f"App Directory: [cyan]{state.servers[0].app_dir}[/cyan]")
+    console.print(f"App User: [cyan]{state.servers[0].app_user}[/cyan]")
+    console.print(f"Database Type: [cyan]{state.db_type}[/cyan]")
+    console.print(f"Database Host: [cyan]{state.db_host}[/cyan]")
+    console.print(f"Web Server: [cyan]{state.web_server}[/cyan]")
+    
+    if Confirm.ask("\nUpdate active application directory?"):
+        new_dir = Prompt.ask("New directory", default=state.servers[0].app_dir)
+        state.servers[0].app_dir = new_dir
+        # Re-detect
+        from ..config.detect import auto_detect
+        auto_detect(transport, state)
+        # Save
+        from ..config.state import save_state
+        save_state(transport, new_dir, state)
+        console.print("[green]Settings updated and re-detected.[/green]")
+    
+    console.input("\nPress Enter to return to menu...")
 
 
 def main_menu(state: ManagerState):
@@ -178,6 +349,19 @@ def main_menu(state: ManagerState):
                 console.input("\nPress Enter to return to menu...")
             elif choice == "3":
                 handle_install(transport, state)
+            elif choice == "4":
+                handle_upgrade(transport, state)
+            elif choice == "5":
+                handle_backup(transport, state)
+            elif choice == "6":
+                handle_restore(transport, state)
+            elif choice == "7":
+                handle_settings(transport, state)
+
+
+
+
+
             elif choice == "0":
 
                 console.print("[yellow]Goodbye![/yellow]")
