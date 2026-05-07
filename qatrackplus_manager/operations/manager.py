@@ -21,10 +21,10 @@ def self_update():
     try:
         # Run pip install upgrade
         subprocess.check_call([
-            pip_bin, "install", "--upgrade", 
-            "--force-reinstall", "--no-cache-dir",
+            pip_bin, "install", "--upgrade", "--no-cache-dir",
             f"git+{GITHUB_URL}"
         ])
+
 
         
         # Save the new SHA

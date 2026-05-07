@@ -16,6 +16,7 @@ class LocalTransport(Transport):
         env: Optional[dict] = None,
         cwd: Optional[str] = None,
     ) -> CommandResult:
+        try:
             # Merge with current environment so we don't lose PATH, etc.
             full_env = os.environ.copy()
             if env:
@@ -42,6 +43,7 @@ class LocalTransport(Transport):
                 stdout="",
                 stderr=str(e)
             )
+
 
     def run_as(self, user: str, cmd: List[str]) -> CommandResult:
         # Implementation of sudo -u USER
