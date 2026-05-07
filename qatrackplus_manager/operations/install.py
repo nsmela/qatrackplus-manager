@@ -120,6 +120,7 @@ def install(
     db_name = state.db_name
     if db_type == 'sqlite':
         db_name = os.path.join(app_dir, "db.sqlite3")
+        state.db_name = db_name
 
     ls_content = generate_local_settings(
         version_major=major,

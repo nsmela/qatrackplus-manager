@@ -98,6 +98,21 @@ def detect_db_from_settings(transport: Transport, local_settings_path: str) -> O
             else:
                 db_config[f'db_{key}'] = val
 
+    # Ensure sqlite path is absolute if it's relative
+    if db_config.get('db_type') == 'sqlite' and db_config.get('db_name'):
+        name = db_config['db_name']
+        if not name.startswith("/"):
+            # Assume it's relative to app_dir. 
+            # app_dir is parent of qatrack/ or qatrack/settings/
+            path_parts = local_settings_path.split("/")
+            if "settings" in path_parts:
+                # /opt/qatrackplus/qatrack/settings/local_settings.py -> /opt/qatrackplus
+                app_dir = "/".join(path_parts[:-3])
+            else:
+                # /opt/qatrackplus/qatrack/local_settings.py -> /opt/qatrackplus
+                app_dir = "/".join(path_parts[:-2])
+            db_config['db_name'] = os.path.join(app_dir, name)
+
     return db_config if db_config else None
 
 def detect_db_from_services(transport: Transport) -> Optional[str]:
