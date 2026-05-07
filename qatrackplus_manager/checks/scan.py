@@ -31,21 +31,42 @@ def scan_existing_installation(transport: Transport, state: ManagerState) -> Lis
 def scan_system_services(transport: Transport, state: ManagerState) -> List[ScanResult]:
     results = []
     
-    # Gunicorn
-    if transport.service_active("qatrackplus"):
-        results.append(ScanResult("Gunicorn service", "ok", "Running"))
-    else:
-        results.append(ScanResult("Gunicorn service", "fail", "Stopped or missing"))
+    # App Service (Gunicorn)
+    is_app = transport.service_active("qatrackplus")
+    results.append(ScanResult(
+        "Gunicorn service", 
+        "ok" if is_app else "fail", 
+        "Running" if is_app else "Stopped/Missing"
+    ))
 
     # Web Server
-    if transport.service_active(state.web_server):
-        results.append(ScanResult(f"{state.web_server.capitalize()} service", "ok", "Running"))
-    else:
-        results.append(ScanResult(f"{state.web_server.capitalize()} service", "fail", "Stopped"))
+    is_web = transport.service_active(state.web_server)
+    results.append(ScanResult(
+        f"{state.web_server.capitalize()} service", 
+        "ok" if is_web else "fail", 
+        "Running" if is_web else "Stopped"
+    ))
+
+    # Redis
+    is_redis = transport.service_active("redis-server") or transport.service_active("redis")
+    results.append(ScanResult(
+        "Redis service", 
+        "ok" if is_redis else "info", 
+        "Running" if is_redis else "Not found"
+    ))
+
+    # RabbitMQ
+    is_rabbitmq = transport.service_active("rabbitmq-server")
+    results.append(ScanResult(
+        "RabbitMQ service", 
+        "ok" if is_rabbitmq else "info", 
+        "Running" if is_rabbitmq else "Not found"
+    ))
         
     return results
 
-def scan_configured_database(transport: Transport, state: ManagerState) -> List[ScanResult]:
+
+def scan_database_engines(transport: Transport, state: ManagerState) -> List[ScanResult]:
     results = []
     db_type = state.db_type
     
@@ -67,12 +88,24 @@ def scan_configured_database(transport: Transport, state: ManagerState) -> List[
         if t == db_type:
             label += " [bold magenta](Configured)[/bold magenta]"
             
-        detail = "Running" if is_active else "Stopped"
+        detail = "Running" if is_active else "Not found/Stopped"
         results.append(ScanResult(label, status, detail))
 
-    # 2. SQLite check (if configured)
+    # 2. SQLite check
+    app_dir = state.servers[0].app_dir
+    sqlite_path = os.path.join(app_dir, "db.sqlite3")
+    exists = transport.file_exists(sqlite_path)
+    
+    label = "SQLite Database"
     if db_type == 'sqlite':
-        results.append(ScanResult("SQLite [bold magenta](Configured)[/bold magenta]", "ok", "Serverless"))
+        label += " [bold magenta](Configured)[/bold magenta]"
+    
+    if exists:
+        results.append(ScanResult(label, "ok", f"File found at {sqlite_path}"))
+    elif db_type == 'sqlite':
+        results.append(ScanResult(label, "fail", "Configured but db.sqlite3 not found"))
+    else:
+        results.append(ScanResult(label, "info", "File not found"))
 
     # 3. Mismatch check: warn if more than one engine is running
     running = []
@@ -91,10 +124,12 @@ def scan_configured_database(transport: Transport, state: ManagerState) -> List[
     return results
 
 
+
 def run_full_scan(transport: Transport, state: ManagerState) -> List[List[ScanResult]]:
     return [
         scan_existing_installation(transport, state),
         scan_system_services(transport, state),
-        scan_configured_database(transport, state),
+        scan_database_engines(transport, state),
         # ... other sections
     ]
+
