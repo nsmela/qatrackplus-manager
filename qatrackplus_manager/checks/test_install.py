@@ -60,7 +60,6 @@ def test_diagnostics(transport: Transport, state: ManagerState) -> List[TestResu
     return results
 
 def test_web_accessibility(transport: Transport, state: ManagerState) -> List[TestResult]:
-
     results = []
     
     # Try localhost
@@ -69,15 +68,40 @@ def test_web_accessibility(transport: Transport, state: ManagerState) -> List[Te
     res = transport.run(["curl", "-s", "-L", "-I", "http://localhost"])
     
     if res.succeeded:
-        status_line = res.output.splitlines()[0] if res.output else "No output"
+        lines = res.output.splitlines()
+        status_line = lines[0] if lines else "No output"
+        
+        # Check Server header to see if it's actually our stack
+        server_header = ""
+        for line in lines:
+            if line.lower().startswith("server:"):
+                server_header = line
+                break
+        
+        is_qatrack = "gunicorn" in server_header.lower() or "nginx" in server_header.lower()
+        
         if "200" in status_line or "301" in status_line or "302" in status_line:
-            results.append(TestResult("Web Access (Localhost)", "pass", status_line))
+            if not is_qatrack and server_header:
+                results.append(TestResult(
+                    "Web Access (Localhost)", 
+                    "warn", 
+                    f"Connected, but response is from '{server_header.split(':')[-1].strip()}' not QATrack+. Possible port conflict."
+                ))
+            else:
+                results.append(TestResult("Web Access (Localhost)", "pass", status_line))
+        elif "405" in status_line:
+             results.append(TestResult(
+                 "Web Access (Localhost)", 
+                 "fail", 
+                 f"405 Method Not Allowed. Intercepted by '{server_header.split(':')[-1].strip()}'. Check Apache/Nginx config."
+             ))
         else:
             results.append(TestResult("Web Access (Localhost)", "fail", f"Unexpected response: {status_line}"))
     else:
         results.append(TestResult("Web Access (Localhost)", "fail", "Connection failed or timeout. Check Nginx/Gunicorn."))
         
     return results
+
 
 def run_all_tests(transport: Transport, state: ManagerState) -> List[List[TestResult]]:
     return [
