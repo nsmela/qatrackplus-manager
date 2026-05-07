@@ -20,7 +20,12 @@ def self_update():
 
     try:
         # Run pip install upgrade
-        subprocess.check_call([pip_bin, "install", "--upgrade", f"git+{GITHUB_URL}"])
+        subprocess.check_call([
+            pip_bin, "install", "--upgrade", 
+            "--force-reinstall", "--no-cache-dir",
+            f"git+{GITHUB_URL}"
+        ])
+
         
         # Save the new SHA
         from ..checks.version import GITHUB_API_URL, SHA_FILE
