@@ -13,8 +13,10 @@ from ..ui.tables import render_scan_section, render_test_section
 
 
 def show_header(state: ManagerState, latest_version: str = ""):
+    from .. import __version__
     console.clear()
     header_text = (
+        f"v{__version__} | "
         f"Active Server: [cyan]{state.active_server}[/cyan] | "
         f"DB: [cyan]{state.db_type}[/cyan] | "
         f"Web: [cyan]{state.web_server}[/cyan]"
@@ -22,6 +24,7 @@ def show_header(state: ManagerState, latest_version: str = ""):
     console.print(Panel(header_text, title="QA Track Plus Manager", style="bold blue"))
     if latest_version:
         console.print(f"Latest Version: [bold cyan]{latest_version}[/bold cyan]")
+
 
 def get_latest_qatrack_release() -> str:
     """Fetch the latest release tarball URL from GitHub API."""
@@ -334,7 +337,8 @@ def main_menu(state: ManagerState):
         console.print("7. Settings")
         console.print("0. Exit")
         
-        choice = console.input("\n[bold]Select an option: [/bold]")
+        choice = console.input("\n[bold]Select an option: [/bold]").strip()
+
         
         try:
             if choice == "1":
