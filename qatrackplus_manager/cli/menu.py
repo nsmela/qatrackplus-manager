@@ -8,7 +8,9 @@ from ..ui.theme import STATUS_ICONS
 from ..config.models import ManagerState
 from ..transport.local import LocalTransport
 from ..checks.scan import run_full_scan
-from ..ui.tables import render_scan_section
+from ..checks.test_install import run_all_tests
+from ..ui.tables import render_scan_section, render_test_section
+
 
 def show_header(state: ManagerState, latest_version: str = ""):
     console.clear()
@@ -72,10 +74,16 @@ def main_menu(state: ManagerState):
                 for i, section in enumerate(results):
                     console.print(render_scan_section(f"Scan Section {i+1}", section))
                 console.input("\nPress Enter to return to menu...")
+            elif choice == "2":
+                results = run_all_tests(transport, state)
+                for i, section in enumerate(results):
+                    console.print(render_test_section(f"Test Section {i+1}", section))
+                console.input("\nPress Enter to return to menu...")
             elif choice == "0":
                 console.print("[yellow]Goodbye![/yellow]")
                 sys.exit(0)
             else:
+
                 console.print("[red]Not implemented yet.[/red]")
                 time.sleep(1)
         except Exception as e:
