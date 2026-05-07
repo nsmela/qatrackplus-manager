@@ -43,16 +43,13 @@ def get_latest_qatrack_release() -> str:
 def handle_install(transport: LocalTransport, state: ManagerState):
     from ..operations.install import install
     from rich.prompt import Confirm, IntPrompt
+    from .prompts import ask_with_default
     import secrets
 
     console.print("\n[bold blue]─── QATrack+ Installation ───[/bold blue]")
     
-    def ask_with_default(msg, default, password=False):
-        prompt_str = f"{msg} [dim](leave blank for default: {default})[/dim]: "
-        val = console.input(prompt_str, password=password)
-        return val.strip() or default
-
     # 1. Basic paths
+
     app_dir = ask_with_default("Application directory", "/opt/qatrackplus")
     app_user = ask_with_default("Application user", "qatrack")
     

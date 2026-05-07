@@ -10,3 +10,9 @@ def ask_confirm(message: str, default: bool = False) -> bool:
 
 def ask_choice(message: str, choices: list, default: str = "") -> str:
     return Prompt.ask(message, choices=choices, default=default)
+
+def ask_with_default(msg: str, default: str, password: bool = False) -> str:
+    prompt_str = f"{msg} [dim](leave blank for default: {default})[/dim]: "
+    val = console.input(prompt_str, password=password)
+    return val.strip() or default
+
