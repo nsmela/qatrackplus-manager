@@ -23,6 +23,57 @@ def show_header(state: ManagerState, latest_version: str = ""):
     if latest_version:
         console.print(f"Latest Version: [bold cyan]{latest_version}[/bold cyan]")
 
+def handle_install(transport: LocalTransport, state: ManagerState):
+    from ..operations.install import install
+    import secrets
+
+    console.print("\n[bold blue]─── QATrack+ Installation ───[/bold blue]")
+    
+    # 1. Basic paths
+    app_dir = console.input(f"Application directory [[cyan]/opt/qatrackplus[/cyan]]: ") or "/opt/qatrackplus"
+    app_user = console.input(f"Application user [[cyan]qatrack[/cyan]]: ") or "qatrack"
+    
+    # 2. Release
+    default_release = "https://github.com/randlet/qatrackplus/archive/refs/tags/v3.1.1.tar.gz"
+    release_url = console.input(f"Release URL (tar.gz) [[cyan]{default_release}[/cyan]]: ") or default_release
+    
+    # 3. Database
+    console.print(f"\n[bold]Database Configuration ([cyan]{state.db_type}[/cyan])[/bold]")
+    db_pass = console.input(f"Password for user [cyan]{state.db_user}[/cyan]: ", password=True)
+    
+    # 4. Django Settings
+    console.print(f"\n[bold]Django Settings[/bold]")
+    secret_key = console.input(f"SECRET_KEY (leave blank to generate): ", password=True)
+    if not secret_key:
+        secret_key = secrets.token_urlsafe(50)
+        console.print("[dim]Generated a random secret key.[/dim]")
+    
+    allowed_hosts = console.input(f"ALLOWED_HOSTS (comma separated) [[cyan]localhost[/cyan]]: ") or "localhost"
+
+    # Confirm
+    if not console.confirm("\nReady to begin installation?"):
+        return
+
+    install_config = {
+        'app_dir': app_dir,
+        'app_user': app_user,
+        'release_url': release_url,
+        'db_password': db_pass,
+        'secret_key': secret_key,
+        'allowed_hosts': allowed_hosts,
+    }
+
+    try:
+        with console.status("[bold green]Installing QATrack+... (this may take several minutes)"):
+            install(transport, state, install_config)
+        console.print("\n[bold green]SUCCESS:[/bold green] QATrack+ has been installed and services started.")
+    except Exception as e:
+        console.print(f"\n[bold red]Installation Failed:[/bold red] {str(e)}")
+        logging.exception("Installation failed")
+    
+    console.input("\nPress Enter to return to menu...")
+
+
 
 def main_menu(state: ManagerState):
     transport = LocalTransport()
@@ -79,7 +130,10 @@ def main_menu(state: ManagerState):
                 for i, section in enumerate(results):
                     console.print(render_test_section(f"Test Section {i+1}", section))
                 console.input("\nPress Enter to return to menu...")
+            elif choice == "3":
+                handle_install(transport, state)
             elif choice == "0":
+
                 console.print("[yellow]Goodbye![/yellow]")
                 sys.exit(0)
             else:
