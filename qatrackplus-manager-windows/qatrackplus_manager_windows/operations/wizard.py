@@ -41,7 +41,7 @@ def run_setup_wizard(transport: PowerShellTransport):
                 if tool == 'odbc_driver':
                     if Confirm.ask("Would you like to install the Microsoft ODBC Driver for SQL Server now?"):
                         console.print("Installing ODBC Driver via winget...")
-                        transport.run("winget install --id Microsoft.ODBCDriverForSQLServer --source winget --exact --silent --accept-package-agreements --accept-source-agreements")
+                        transport.run("winget install --id Microsoft.msodbcsql.18 --source winget --exact --silent --accept-package-agreements --accept-source-agreements")
                         results = run_system_scan(transport) # Refresh
                 else:
                     tools_ok = False
