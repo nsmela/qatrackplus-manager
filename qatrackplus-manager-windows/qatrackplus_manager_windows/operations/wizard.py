@@ -40,8 +40,9 @@ def run_setup_wizard(transport: PowerShellTransport):
                 console.print(f"[red]✘ {tool.capitalize().replace('_', ' ')} is {status}.[/red]")
                 if tool == 'odbc_driver':
                     if Confirm.ask("Would you like to install the Microsoft ODBC Driver for SQL Server now?"):
-                        console.print("Installing ODBC Driver via winget...")
-                        transport.run("winget install --id Microsoft.msodbcsql.18 --source winget --exact --silent --accept-package-agreements --accept-source-agreements")
+                        console.print("[bold cyan]Installing ODBC Driver via winget...[/bold cyan]")
+                        transport.run("winget install --id Microsoft.msodbcsql.18 --source winget --exact --silent --accept-package-agreements --accept-source-agreements", capture_output=False)
+                        console.print("[green]✔ ODBC Driver installed successfully![/green]")
                         results = run_system_scan(transport) # Refresh
                 else:
                     tools_ok = False
@@ -54,8 +55,9 @@ def run_setup_wizard(transport: PowerShellTransport):
             if version == "Missing":
                 console.print(f"[red]✘ {pkg.capitalize()} is missing.[/red]")
                 if Confirm.ask(f"Would you like to install {pkg.capitalize()} now?"):
-                    console.print(f"Installing {pkg}...")
-                    transport.run(f"python -m pip install {pkg}")
+                    console.print(f"[bold cyan]Installing {pkg}...[/bold cyan]")
+                    transport.run(f"python -m pip install {pkg}", capture_output=False)
+                    console.print(f"[green]✔ {pkg.capitalize()} installed successfully![/green]")
                     results = run_system_scan(transport) # Refresh
                 else:
                     tools_ok = False
@@ -68,8 +70,8 @@ def run_setup_wizard(transport: PowerShellTransport):
             if repo_info.get('behind'):
                 console.print(f"\n[yellow]! An update is available on the '{repo_info['branch']}' branch.[/yellow]")
                 if Confirm.ask("Would you like to pull the latest version now?"):
-                    console.print("Pulling updates...")
-                    transport.run("git pull")
+                    console.print("[bold cyan]Pulling updates...[/bold cyan]")
+                    transport.run("git pull", capture_output=False)
                     console.print("[green]✔ Repository updated. Please restart the manager if necessary.[/green]")
                     results = run_system_scan(transport)
             else:

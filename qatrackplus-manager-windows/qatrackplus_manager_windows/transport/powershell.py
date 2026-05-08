@@ -16,8 +16,7 @@ class PowerShellTransport:
         return "powershell.exe"
 
     def run(self, command: str, capture_output: bool = True, shell: bool = False, check: bool = True, log_errors: bool = True) -> subprocess.CompletedProcess:
-        """Runs a PowerShell command."""
-        # Use a list for subprocess.run to handle quoting correctly
+        """Runs a PowerShell command, optionally streaming output to console."""
         full_command = [
             self.ps_exe,
             "-NoProfile",
@@ -28,9 +27,19 @@ class PowerShellTransport:
         logging.debug(f"Executing PS: {command}")
         
         try:
+            if not capture_output:
+                # Stream directly to stdout/stderr
+                result = subprocess.run(
+                    full_command,
+                    capture_output=False,
+                    check=check
+                )
+                # Return a dummy completed process for compatibility
+                return result
+            
             result = subprocess.run(
                 full_command,
-                capture_output=capture_output,
+                capture_output=True,
                 text=True,
                 check=check
             )
@@ -38,8 +47,9 @@ class PowerShellTransport:
         except subprocess.CalledProcessError as e:
             if log_errors:
                 logging.error(f"Command failed with exit code {e.returncode}")
-                logging.error(f"Stdout: {e.stdout}")
-                logging.error(f"Stderr: {e.stderr}")
+                if capture_output:
+                    logging.error(f"Stdout: {e.stdout}")
+                    logging.error(f"Stderr: {e.stderr}")
             raise
 
     def get_service_status(self, service_name: str) -> str:
