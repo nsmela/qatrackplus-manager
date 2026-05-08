@@ -14,8 +14,8 @@ def show_header(update_info: dict = None):
     header_text = (
         f"v{__version__} | [bold green]Windows Edition[/bold green]"
     )
-    if update_info and update_info.get('behind'):
-        header_text += f"\n\n[bold yellow]⚠ Update Available![/bold yellow] Use option 1 to update from {update_info['branch']}."
+    if update_info and update_info.get('updated'):
+        header_text += f"\n\n[bold green]✔ Manager was automatically updated![/bold green]"
     
     console.print(Panel(header_text, title="QA Track Plus Manager (Windows)", style="bold blue"))
 
@@ -23,9 +23,17 @@ def main_menu():
     transport = PowerShellTransport()
     
     # Check for updates once on startup
+    update_info = {'updated': False}
     with console.status("[bold cyan]Checking for updates..."):
         results = run_system_scan(transport)
-        update_info = results.get('repository')
+        repo_info = results.get('repository')
+        
+        if repo_info and repo_info.get('behind'):
+            console.print("[yellow]Update found! Applying automatically...[/yellow]")
+            transport.run("git pull", capture_output=False)
+            update_info['updated'] = True
+            # Refresh version info if needed (though it won't affect current process memory)
+            update_info['branch'] = repo_info.get('branch')
 
     while True:
         # Use native OS clear command for maximum compatibility on Windows
