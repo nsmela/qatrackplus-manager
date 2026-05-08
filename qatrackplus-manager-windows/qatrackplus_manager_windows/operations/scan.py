@@ -163,4 +163,22 @@ def run_system_scan(transport: PowerShellTransport) -> Dict[str, Any]:
     chrome_found = any(transport.file_exists(p) for p in chrome_paths)
     results['chrome'] = {"status": "Found" if chrome_found else "Missing"}
     
+    # 8. Repository Update Check
+    try:
+        # Get current branch
+        branch = transport.run("git rev-parse --abbrev-ref HEAD", log_errors=False).stdout.strip()
+        # Fetch latest (quietly)
+        transport.run("git fetch origin", log_errors=False)
+        # Check if behind
+        status = transport.run("git status -uno", log_errors=False).stdout.strip()
+        
+        is_behind = "Your branch is behind" in status
+        results['repository'] = {
+            "status": "Update Available" if is_behind else "Up to date",
+            "branch": branch,
+            "behind": is_behind
+        }
+    except Exception:
+        results['repository'] = {"status": "Unknown", "branch": "Unknown", "behind": False}
+
     return results

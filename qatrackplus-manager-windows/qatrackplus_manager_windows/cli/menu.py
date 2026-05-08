@@ -10,18 +10,28 @@ from ..operations.scan import run_system_scan
 # Initialize with legacy windows support and force terminal mode for better stability
 console = Console(force_terminal=True)
 
-def show_header():
+def show_header(update_info: dict = None):
     header_text = (
         f"v{__version__} | [bold green]Windows Edition[/bold green]"
     )
+    if update_info and update_info.get('behind'):
+        header_text += f"\n\n[bold yellow]⚠ Update Available![/bold yellow] Use option 1 to update from {update_info['branch']}."
+    
     console.print(Panel(header_text, title="QA Track Plus Manager (Windows)", style="bold blue"))
 
 def main_menu():
+    transport = PowerShellTransport()
+    
+    # Check for updates once on startup
+    with console.status("[bold cyan]Checking for updates..."):
+        results = run_system_scan(transport)
+        update_info = results.get('repository')
+
     while True:
         # Use native OS clear command for maximum compatibility on Windows
         os.system('cls' if os.name == 'nt' else 'clear')
             
-        show_header()
+        show_header(update_info)
         
         console.print("\n[bold]Main Menu[/bold]")
         console.print("1. Guided Setup & Scan")

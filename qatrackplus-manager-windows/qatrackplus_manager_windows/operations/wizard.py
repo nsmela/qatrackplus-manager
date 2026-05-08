@@ -53,11 +53,28 @@ def run_setup_wizard(transport: PowerShellTransport):
             version = packages.get(pkg, "Missing")
             if version == "Missing":
                 console.print(f"[red]✘ {pkg.capitalize()} is missing.[/red]")
-                tools_ok = False
+                if Confirm.ask(f"Would you like to install {pkg.capitalize()} now?"):
+                    console.print(f"Installing {pkg}...")
+                    transport.run(f"python -m pip install {pkg}")
+                    results = run_system_scan(transport) # Refresh
+                else:
+                    tools_ok = False
             else:
                 console.print(f"[green]✔ {pkg.capitalize()} ({version}) is installed.[/green]")
         
-        if tools_ok: break
+        if tools_ok:
+            # Check for repository updates
+            repo_info = results.get('repository', {})
+            if repo_info.get('behind'):
+                console.print(f"\n[yellow]! An update is available on the '{repo_info['branch']}' branch.[/yellow]")
+                if Confirm.ask("Would you like to pull the latest version now?"):
+                    console.print("Pulling updates...")
+                    transport.run("git pull")
+                    console.print("[green]✔ Repository updated. Please restart the manager if necessary.[/green]")
+                    results = run_system_scan(transport)
+            else:
+                console.print(f"\n[green]✔ Manager is up to date (branch: {repo_info.get('branch', 'unknown')}).[/green]")
+            break
         
         choice = handle_failure("Some tools or packages are missing.")
         if choice == "quit":
