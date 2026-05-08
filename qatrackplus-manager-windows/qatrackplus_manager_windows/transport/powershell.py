@@ -5,11 +5,21 @@ from typing import List, Optional
 class PowerShellTransport:
     """Handles execution of PowerShell commands locally on Windows."""
 
+    def __init__(self):
+        self.ps_exe = self._find_best_powershell()
+
+    def _find_best_powershell(self) -> str:
+        """Prefers pwsh.exe (PS 7+) over powershell.exe (PS 5.1)."""
+        import shutil
+        if shutil.which("pwsh"):
+            return "pwsh"
+        return "powershell.exe"
+
     def run(self, command: str, capture_output: bool = True, shell: bool = False, check: bool = True, log_errors: bool = True) -> subprocess.CompletedProcess:
         """Runs a PowerShell command."""
         # Use a list for subprocess.run to handle quoting correctly
         full_command = [
-            "powershell.exe",
+            self.ps_exe,
             "-NoProfile",
             "-ExecutionPolicy", "Bypass",
             "-Command", command

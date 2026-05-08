@@ -6,6 +6,30 @@ $FOLDER_NAME = "qatrackplus-manager"
 
 Write-Host "--- QATrack+ Manager for Windows Setup ---" -ForegroundColor Blue
 
+# 0. Check for PowerShell Core (pwsh)
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Host "You are running an older version of PowerShell ($($PSVersionTable.PSVersion))." -ForegroundColor Yellow
+    Write-Host "QATrack+ Manager works best with the latest PowerShell (pwsh)." -ForegroundColor Cyan
+    $choice = Read-Host "Would you like to install the latest PowerShell via winget? (Y/N)"
+    if ($choice -eq "Y" -or $choice -eq "y") {
+        Write-Host "Installing latest PowerShell via winget..." -ForegroundColor Yellow
+        winget install --id Microsoft.PowerShell --source winget --exact --silent --accept-package-agreements --accept-source-agreements
+        Write-Host "PowerShell installed! Please restart your terminal and run this script using 'pwsh' for the best experience." -ForegroundColor Green
+        exit 0
+    }
+}
+
+# 0.5 Check for Windows Terminal
+if (-not (Get-Command wt -ErrorAction SilentlyContinue)) {
+    Write-Host "Windows Terminal is not installed. It provides a much better experience for this manager." -ForegroundColor Cyan
+    $choice = Read-Host "Would you like to install Windows Terminal via winget? (Y/N)"
+    if ($choice -eq "Y" -or $choice -eq "y") {
+        Write-Host "Installing Windows Terminal via winget..." -ForegroundColor Yellow
+        winget install --id Microsoft.WindowsTerminal --source winget --exact --silent --accept-package-agreements --accept-source-agreements
+        Write-Host "Windows Terminal installed!" -ForegroundColor Green
+    }
+}
+
 # 1. Check for Git (Needed for cloning)
 $gitExe = (Get-Command git -ErrorAction SilentlyContinue).Source
 if (-not $gitExe) {
@@ -52,8 +76,14 @@ if (Test-Path (Join-Path $scriptDir "pyproject.toml")) {
     $projectRoot = Join-Path $clonedDir "qatrackplus-manager-windows"
 }
 
-if (-not (Test-Path $projectRoot)) {
-    Write-Host "Error: Could not find qatrackplus-manager-windows directory at $projectRoot" -ForegroundColor Red
+if (-not (Test-Path $projectRoot) -or $projectRoot -match "^[a-zA-Z]:\\$") {
+    if ($projectRoot -match "^[a-zA-Z]:\\$") {
+        Write-Host "Safety Error: The script detected the root of a drive ($projectRoot) as the project folder." -ForegroundColor Red
+        Write-Host "This usually happens if a pyproject.toml file was accidentally copied to C:\." -ForegroundColor Yellow
+        Write-Host "Please delete C:\pyproject.toml and run this script again from a subfolder." -ForegroundColor Cyan
+    } else {
+        Write-Host "Error: Could not find qatrackplus-manager-windows directory at $projectRoot" -ForegroundColor Red
+    }
     exit 1
 }
 

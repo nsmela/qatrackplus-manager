@@ -16,7 +16,12 @@ def show_header():
 
 def main_menu():
     while True:
-        console.clear()
+        # Only clear if we are in a terminal that supports it well
+        if console.is_terminal:
+            console.clear()
+        else:
+            console.print("\n" + "="*80 + "\n")
+            
         show_header()
         
         console.print("\n[bold]Main Menu[/bold]")
