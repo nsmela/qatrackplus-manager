@@ -92,7 +92,14 @@ def run_system_scan(transport: PowerShellTransport) -> Dict[str, Any]:
 
     # 4. ODBC Driver Check
     try:
+        # Check via Get-OdbcDriver (modern PS)
         odbc_check = transport.run("Get-OdbcDriver -Name 'ODBC Driver * for SQL Server' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name", log_errors=False).stdout.strip()
+        
+        # Fallback to Registry check (works on all Windows versions)
+        if not odbc_check:
+            reg_check = transport.run("Get-ItemProperty -Path 'HKLM:\\SOFTWARE\\ODBC\\ODBCINST.INI\\ODBC Drivers' -ErrorAction SilentlyContinue | Get-Member -MemberType NoteProperty | Where-Object { $_.Name -like 'ODBC Driver * for SQL Server' } | Select-Object -ExpandProperty Name", log_errors=False).stdout.strip()
+            odbc_check = reg_check
+
         if odbc_check:
             # Get the unique names
             drivers = list(set([d.strip() for d in odbc_check.splitlines() if d.strip()]))

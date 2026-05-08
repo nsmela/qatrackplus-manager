@@ -35,10 +35,16 @@ def run_setup_wizard(transport: PowerShellTransport):
         for tool in ['python', 'git', 'odbc_driver']:
             status = results.get(tool, {}).get('status', 'Missing')
             if status == "Found":
-                console.print(f"[green]✔ {tool.capitalize()} found.[/green]")
+                console.print(f"[green]✔ {tool.capitalize().replace('_', ' ')} found.[/green]")
             else:
-                console.print(f"[red]✘ {tool.capitalize()} is {status}.[/red]")
-                tools_ok = False
+                console.print(f"[red]✘ {tool.capitalize().replace('_', ' ')} is {status}.[/red]")
+                if tool == 'odbc_driver':
+                    if Confirm.ask("Would you like to install the Microsoft ODBC Driver for SQL Server now?"):
+                        console.print("Installing ODBC Driver via winget...")
+                        transport.run("winget install --id Microsoft.ODBCDriverForSQLServer --source winget --exact --silent --accept-package-agreements --accept-source-agreements")
+                        results = run_system_scan(transport) # Refresh
+                else:
+                    tools_ok = False
         
         # Package Check
         console.print("\n[yellow]Verifying Python Packages:[/yellow]")
