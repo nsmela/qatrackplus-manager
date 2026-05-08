@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qatrackplus-manager-windows"
+version = "0.1.0"
+description = "Install, upgrade, backup, restore and verify QA Track Plus installations on Windows"
+requires-python = ">=3.8"
+dependencies = [
+    "rich>=13.0",
+    "tomli>=2.0; python_version < '3.11'",
+    "psutil>=5.9",
+    "requests>=2.31",
+    "packaging>=23.0",
+    "pywin32>=306; sys_platform == 'win32'",
+]
+
+[project.scripts]
+qatrackplus-manager-win = "qatrackplus_manager_windows.__main__:main"
+
+[project.urls]
+Repository = "https://github.com/YOUR_ORG/qatrackplus-manager-windows"
