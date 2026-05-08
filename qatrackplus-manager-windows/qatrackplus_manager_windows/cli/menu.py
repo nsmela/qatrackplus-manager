@@ -1,3 +1,4 @@
+import os
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -6,7 +7,8 @@ from .. import __version__
 from ..transport.powershell import PowerShellTransport
 from ..operations.scan import run_system_scan
 
-console = Console()
+# Initialize with legacy windows support and force terminal mode for better stability
+console = Console(force_terminal=True)
 
 def show_header():
     header_text = (
@@ -16,11 +18,8 @@ def show_header():
 
 def main_menu():
     while True:
-        # Only clear if we are in a terminal that supports it well
-        if console.is_terminal:
-            console.clear()
-        else:
-            console.print("\n" + "="*80 + "\n")
+        # Use native OS clear command for maximum compatibility on Windows
+        os.system('cls' if os.name == 'nt' else 'clear')
             
         show_header()
         
