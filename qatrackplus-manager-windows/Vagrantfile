@@ -1,0 +1,49 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "gusztavvargadr/windows-11-22h2-standard"
+  
+  # Use VirtualBox provider
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "QATrackPlus-Manager-Test-Win11"
+    vb.memory = "4096"
+    vb.cpus = 2
+    vb.gui = true # Set to true if you want to see the desktop
+    
+    # Required for some Windows versions to handle display correctly in VirtualBox
+    vb.customize ["modifyvm", :id, "--vram", "128"]
+    vb.customize ["modifyvm", :id, "--graphicscontroller", "vmsvga"]
+  end
+
+  # Sync the current project directory to the VM
+  # We map it to C:\qatrackplus-manager
+  config.vm.synced_folder ".", "/qatrackplus-manager", type: "virtualbox"
+
+  # Provisioning: Ensure Python and Git are available
+  # Note: Many gusztavvargadr boxes have these via Chocolatey
+  config.vm.provision "shell", inline: <<-SHELL
+    Write-Host "Verifying prerequisites..."
+    if (!(Get-Command python -ErrorAction SilentlyContinue)) {
+        Write-Host "Installing Python via winget..."
+        winget install --id Python.Python.3.12 --source winget --exact --silent --accept-package-agreements --accept-source-agreements
+    }
+    if (!(Get-Command git -ErrorAction SilentlyContinue)) {
+        Write-Host "Installing Git via winget..."
+        winget install --id Git.Git --source winget --exact --silent --accept-package-agreements --accept-source-agreements
+    }
+    
+    # Create a desktop shortcut for the manager for convenience
+    $WshShell = New-Object -ComObject WScript.Shell
+    $Shortcut = $WshShell.CreateShortcut("$HOME\\Desktop\\QATrack+ Manager.lnk")
+    $Shortcut.TargetPath = "python.exe"
+    $Shortcut.Arguments = "-m qatrackplus_manager_windows"
+    $Shortcut.WorkingDirectory = "C:\\qatrackplus-manager"
+    $Shortcut.Save()
+    
+    Write-Host "VM Ready! Project is synced to C:\\qatrackplus-manager"
+  SHELL
+  
+  # Allow RDP access
+  config.vm.network "forwarded_port", guest: 3389, host: 33389, id: "rdp", auto_correct: true
+end

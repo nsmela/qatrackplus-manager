@@ -1,7 +1,8 @@
-import sys
 from .cli.menu import main_menu
+from .config.logging import setup_logging
 
 def main():
+    setup_logging()
     try:
         main_menu()
     except KeyboardInterrupt:

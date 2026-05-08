@@ -48,9 +48,10 @@ def main_menu():
         console.print("4. Backup & Restore")
         console.print("5. Database Management")
         console.print("6. PDF Report Setup (Chrome)")
+        console.print("7. IIS Management")
         console.print("0. Exit")
         
-        choice = Prompt.ask("\nSelect an option", choices=["0", "1", "2", "3", "4", "5", "6"], default="0")
+        choice = Prompt.ask("\nSelect an option", choices=["0", "1", "2", "3", "4", "5", "6", "7"], default="0")
         transport = PowerShellTransport()
         
         if choice == "1":
@@ -73,6 +74,9 @@ def main_menu():
         elif choice == "6":
             console.print("[yellow]Chrome/PDF setup coming soon...[/yellow]")
             console.input("\nPress Enter to return...")
+        elif choice == "7":
+            from .iis import iis_management_menu
+            iis_management_menu(transport)
         elif choice == "0":
             console.print("[yellow]Goodbye![/yellow]")
             break

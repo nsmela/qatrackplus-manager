@@ -196,13 +196,32 @@ def run_setup_wizard(transport: PowerShellTransport):
 
     # --- PHASE 3: IIS ---
     console.print("\n[yellow]Phase 3: Web Server (IIS) Configuration[/yellow]")
+    from .iis import install_iis, install_iis_modules
+    
     if results['iis']['status'] == "Missing":
-        console.print("[red]IIS (W3SVC) is not installed.[/red]")
+        console.print("[red]✘ IIS (W3SVC) is not installed.[/red]")
+        if Confirm.ask("Would you like to install IIS and its required features now?"):
+            console.print("[bold cyan]Installing IIS...[/bold cyan]")
+            install_iis(transport)
+            console.print("[green]✔ IIS installed successfully![/green]")
+            results = run_system_scan(transport) # Refresh
     else:
+        console.print("[green]✔ IIS is installed.[/green]")
         modules = results['iis'].get('modules', {})
+        modules_missing = False
         for mod, status in modules.items():
             if status == "Missing":
-                console.print(f"[yellow]! {mod} is missing.[/yellow]")
+                console.print(f"[red]✘ {mod} is missing.[/red]")
+                modules_missing = True
+            else:
+                console.print(f"[green]✔ {mod} is installed.[/green]")
+        
+        if modules_missing:
+            if Confirm.ask("Would you like to install missing IIS modules (URL Rewrite, ARR) now?"):
+                console.print("[bold cyan]Installing IIS modules via winget...[/bold cyan]")
+                install_iis_modules(transport)
+                console.print("[green]✔ IIS modules installed successfully![/green]")
+                results = run_system_scan(transport) # Refresh
 
     # --- PHASE 4: CHROME ---
     console.print("\n[yellow]Phase 4: PDF Generation[/yellow]")
