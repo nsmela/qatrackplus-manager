@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+qatrackplus_manager_windows/__init__.py
+qatrackplus_manager_windows/__main__.py
+qatrackplus_manager_windows.egg-info/PKG-INFO
+qatrackplus_manager_windows.egg-info/SOURCES.txt
+qatrackplus_manager_windows.egg-info/dependency_links.txt
+qatrackplus_manager_windows.egg-info/entry_points.txt
+qatrackplus_manager_windows.egg-info/requires.txt
+qatrackplus_manager_windows.egg-info/top_level.txt
+qatrackplus_manager_windows/cli/menu.py
+qatrackplus_manager_windows/operations/db.py
+qatrackplus_manager_windows/operations/scan.py
+qatrackplus_manager_windows/operations/services.py
+qatrackplus_manager_windows/transport/powershell.py
