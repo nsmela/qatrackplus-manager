@@ -12,7 +12,7 @@ def iis_management_menu(transport: PowerShellTransport):
     while True:
         status = get_iis_status(transport)
         
-        console.print("\n" + Panel("[bold blue]IIS Management[/bold blue]", style="blue"))
+        console.print("\n", Panel("[bold blue]IIS Management[/bold blue]", style="blue"))
         
         # Display Current Status
         table = Table(show_header=False, box=None)

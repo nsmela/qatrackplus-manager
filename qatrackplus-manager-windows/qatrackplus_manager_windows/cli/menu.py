@@ -31,9 +31,12 @@ def main_menu():
         if repo_info and repo_info.get('behind'):
             console.print("[yellow]Update found! Applying automatically...[/yellow]")
             transport.run("git pull", capture_output=False)
-            update_info['updated'] = True
-            # Refresh version info if needed (though it won't affect current process memory)
-            update_info['branch'] = repo_info.get('branch')
+            console.print("[green]✔ Update applied! Restarting manager...[/green]")
+            
+            # Restart the process with the new code
+            import sys
+            import os
+            os.execv(sys.executable, ['python'] + sys.argv)
 
     while True:
         # Use native OS clear command for maximum compatibility on Windows

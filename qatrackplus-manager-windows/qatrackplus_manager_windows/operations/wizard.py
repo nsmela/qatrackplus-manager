@@ -28,29 +28,39 @@ def run_setup_wizard(transport: PowerShellTransport):
     console.print("\n[bold blue]=== QATrack+ Interactive Setup Wizard ===[/bold blue]\n")
     
     # --- PHASE 1: TOOLS ---
-    results = run_system_scan(transport)
     while True:
         console.print("[yellow]Phase 1: Tool Verification[/yellow]")
         tools_ok = True
+        
+        # Incremental scan for tools
         for tool in ['python', 'git', 'odbc_driver']:
+            tool_name = tool.capitalize().replace('_', ' ')
+            with console.status(f"[bold cyan]Checking {tool_name}..."):
+                # We can still use run_system_scan but we'll extract just what we need
+                # or better, we could have a more granular scan.
+                # For now, let's just refresh the whole scan but only show the current tool.
+                results = run_system_scan(transport)
+            
             status = results.get(tool, {}).get('status', 'Missing')
             if status == "Found":
-                console.print(f"[green]✔ {tool.capitalize().replace('_', ' ')} found.[/green]")
+                console.print(f"[green]✔ {tool_name} found.[/green]")
             else:
-                console.print(f"[red]✘ {tool.capitalize().replace('_', ' ')} is {status}.[/red]")
+                console.print(f"[red]✘ {tool_name} is {status}.[/red]")
                 if tool == 'odbc_driver':
                     if Confirm.ask("Would you like to install the Microsoft ODBC Driver for SQL Server now?"):
                         console.print("[bold cyan]Installing ODBC Driver via winget...[/bold cyan]")
                         transport.run("winget install --id Microsoft.msodbcsql.18 --source winget --exact --silent --accept-package-agreements --accept-source-agreements", capture_output=False)
                         console.print("[green]✔ ODBC Driver installed successfully![/green]")
-                        results = run_system_scan(transport) # Refresh
                 else:
                     tools_ok = False
         
         # Package Check
         console.print("\n[yellow]Verifying Python Packages:[/yellow]")
-        packages = results.get('packages', {})
         for pkg in ['django', 'cherrypy']:
+            with console.status(f"[bold cyan]Checking {pkg.capitalize()}..."):
+                results = run_system_scan(transport)
+            
+            packages = results.get('packages', {})
             version = packages.get(pkg, "Missing")
             if version == "Missing":
                 console.print(f"[red]✘ {pkg.capitalize()} is missing.[/red]")
@@ -58,7 +68,6 @@ def run_setup_wizard(transport: PowerShellTransport):
                     console.print(f"[bold cyan]Installing {pkg}...[/bold cyan]")
                     transport.run(f"& '{sys.executable}' -m pip install {pkg}", capture_output=False)
                     console.print(f"[green]✔ {pkg.capitalize()} installed successfully![/green]")
-                    results = run_system_scan(transport) # Refresh
                 else:
                     tools_ok = False
             else:
