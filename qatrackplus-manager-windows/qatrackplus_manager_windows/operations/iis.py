@@ -48,7 +48,7 @@ def install_iis_modules(transport: PowerShellTransport) -> Dict[str, Any]:
     # 1. URL Rewrite
     logging.info("Attempting to install URL Rewrite module...")
     try:
-        transport.run("winget install --id Microsoft.IIS.RewriteModule --source winget --exact --silent --accept-package-agreements --accept-source-agreements", capture_output=False)
+        transport.run("winget install --id Microsoft.IIS.URLRewrite --source winget --exact --silent --accept-package-agreements --accept-source-agreements", capture_output=False)
         results['URL Rewrite'] = "Success"
         logging.info("URL Rewrite module installed successfully.")
     except Exception as e:
@@ -59,7 +59,7 @@ def install_iis_modules(transport: PowerShellTransport) -> Dict[str, Any]:
     logging.info("Attempting to install ARR module...")
     try:
         # Note: ARR depends on Web Farm Framework, but winget usually handles it or ARR installer does.
-        transport.run("winget install --id Microsoft.IIS.ARR --source winget --exact --silent --accept-package-agreements --accept-source-agreements", capture_output=False)
+        transport.run("winget install --id Microsoft.IIS.ApplicationRequestRouting --source winget --exact --silent --accept-package-agreements --accept-source-agreements", capture_output=False)
         results['ARR'] = "Success"
         logging.info("ARR module installed successfully.")
     except Exception as e:
