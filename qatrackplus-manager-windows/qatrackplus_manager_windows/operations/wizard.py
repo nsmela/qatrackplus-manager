@@ -56,7 +56,7 @@ def run_setup_wizard(transport: PowerShellTransport):
                 console.print(f"[red]✘ {pkg.capitalize()} is missing.[/red]")
                 if Confirm.ask(f"Would you like to install {pkg.capitalize()} now?"):
                     console.print(f"[bold cyan]Installing {pkg}...[/bold cyan]")
-                    transport.run(f"python -m pip install {pkg}", capture_output=False)
+                    transport.run(f"& '{sys.executable}' -m pip install {pkg}", capture_output=False)
                     console.print(f"[green]✔ {pkg.capitalize()} installed successfully![/green]")
                     results = run_system_scan(transport) # Refresh
                 else:

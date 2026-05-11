@@ -1,3 +1,4 @@
+import sys
 from .cli.menu import main_menu
 from .config.logging import setup_logging
 

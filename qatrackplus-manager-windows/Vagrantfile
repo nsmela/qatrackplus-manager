@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "gusztavvargadr/windows-11-22h2-standard"
+  config.vm.box = "gusztavvargadr/windows-11"
   
   # Use VirtualBox provider
   config.vm.provider "virtualbox" do |vb|
