@@ -1,5 +1,7 @@
 from ..transport.powershell import PowerShellTransport
 from typing import Dict, Any
+import importlib.util
+import sys
 
 def run_system_scan(transport: PowerShellTransport) -> Dict[str, Any]:
     """Scans the system for QATrack+ prerequisites."""
@@ -141,19 +143,26 @@ def run_system_scan(transport: PowerShellTransport) -> Dict[str, Any]:
         packages = ['django', 'cherrypy']
         pkg_results = {}
         for pkg in packages:
-            # Check via pip
-            check = transport.run(f"python -m pip show {pkg}", log_errors=False).stdout.strip()
-            if check:
-                # Extract version
-                for line in check.splitlines():
-                    if line.startswith("Version:"):
-                        pkg_results[pkg] = line.replace("Version:", "").strip()
-                        break
+            # Use importlib to check if the package is available to the current interpreter
+            spec = importlib.util.find_spec(pkg)
+            if spec is not None:
+                # Try to get the version
+                try:
+                    module = importlib.import_module(pkg)
+                    # Many packages have a __version__ attribute
+                    if hasattr(module, "__version__"):
+                        pkg_results[pkg] = module.__version__
+                    elif hasattr(module, "get_version"):
+                        pkg_results[pkg] = module.get_version()
+                    else:
+                        pkg_results[pkg] = "Installed"
+                except:
+                    pkg_results[pkg] = "Installed"
             else:
                 pkg_results[pkg] = "Missing"
         results['packages'] = pkg_results
-    except Exception:
-        results['packages'] = {}
+    except Exception as e:
+        results['packages'] = {"error": str(e)}
         
     # 7. Chrome Check (for PDF reports)
     chrome_paths = [
